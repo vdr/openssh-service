@@ -1,3 +1,9 @@
 #!/bin/sh
 
-brew services start openssh_service
+if [ "$(brew services info openssh-service --json | jq '.[].running')" == "false" ]; then
+  echo "Service not running. Starting..."
+  echo "You will need to execute 'brew services start openssh-service' to configure the service to start at login"
+  brew services run openssh-service
+fi
+echo "Registering service in this terminal session..."
+SSH_AUTH_SOCK=/tmp/ssh-agent.socket; export SSH_AUTH_SOCK;
