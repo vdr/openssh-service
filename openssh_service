@@ -1,0 +1,3 @@
+#!/bin/sh
+
+brew services start openssh_service
