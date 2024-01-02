@@ -1,9 +1,74 @@
 #!/bin/sh
+set -e
 
-if [ "$(brew services info openssh-service --json | jq '.[].running')" == "false" ]; then
-  echo "Service not running. Starting..."
-  echo "You will need to execute 'brew services start openssh-service' to configure the service to start at login"
-  brew services run openssh-service
+PREFIX=$(brew --prefix)
+SOCKET=/tmp/ssh-agent.socket
+# This script is used to start ssh-agent as a service on macOS
+# Can also be used for variety of diagnostics and troubleshooting
+
+usage() {
+  echo "Usage: $0 <help|check|run|session|launchd>"
+  echo "  help: Print this help message"
+  echo "  check: Returns the status of the service"
+  echo "  run: Simply run the service manually"
+  echo "  session: Source this (. $0 session), to configure in current session"
+  echo "  launchd: Special for launchd, do not use"
+}
+
+check() {
+  set e
+  brew services info openssh-service 1> /dev/null 2> /dev/null
+  set -e
+
+  if [ $? -ne 0 ]; then
+    echo "Service not installed"
+    echo "You need to execute 'brew services start openssh-service' to configure the service to start at login"
+    exit 1
+  elif [ "$(brew services info openssh-service --json | jq '.[].running')" == "false" ]; then
+    echo "Service installed but not running."
+    echo "Have a look at openssh-service in system.log for more information"
+    exit 1
+  elif [ "$SSH_AUTH_SOCK" != "$SOCKET" ]; then
+    echo "Service running but not configured in this session."
+    echo "You can run 'eval \$($0 session)' to configure in this session"
+    exit 1
+  else
+    echo "Service running and configured in this session"
+  fi
+}
+
+run() {
+  export SSH_ASKPASS="$PREFIX/bin/ssh-askpass"
+  export SSH_ASKPASS_REQUIRE=force
+  export DISPLAY=":0"
+  echo Running ssh-agent with the following environment variables:
+  echo SSH_ASKPASS=$SSH_ASKPASS
+  echo SSH_ASKPASS_REQUIRE=$SSH_ASKPASS_REQUIRE
+
+  $PREFIX/ssh-agent -D -a $SOCKET
+}
+
+launchd() {
+  echo "Set system environment variable SSH_AUTH_SOCK to $SOCKET"
+  launchctl setenv SSH_AUTH_SOCK $SOCKET
+  run
+}
+
+session() {
+  echo "export SSH_AUTH_SOCK=$SOCKET;"
+}
+
+if [ $# -lt 1 ]; then
+  usage
+  exit 1
+elif [ "$1" == "help" ]; then
+  usage
+elif [ "$1" == "check" ]; then
+  check
+elif [ "$1" == "run" ]; then
+  run
+elif [ "$1" == "launchd" ]; then
+  launchd
+elif [ "$1" == "session" ]; then
+  session
 fi
-echo "Registering service in this terminal session..."
-SSH_AUTH_SOCK=/tmp/ssh-agent.socket; export SSH_AUTH_SOCK;
