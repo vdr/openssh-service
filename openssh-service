@@ -1,18 +1,21 @@
 #!/bin/sh
-set -e
 
 HOMEBREW_PREFIX=$(brew --prefix)
 
-SOCKET=/tmp/ssh-agent.socket
-# This script is used to start ssh-agent as a service on macOS
+OPENSSH_SERVICE_SOCK=${OPENSSH_SERVICE_SOCK:=/tmp/openssh-service.socket}
+# This script is used to start brew ssh-agent as a service on macOS
 # Can also be used for variety of diagnostics and troubleshooting
+
+log() {
+  echo "$(date '+%F %T.%N') $1"
+}
 
 usage() {
   echo "Usage: $0 <help|check|run|session|launchd>"
   echo "  help: Print this help message"
   echo "  check: Returns the status of the service"
   echo "  run: Simply run the service manually"
-  echo "  session: Source this (. $0 session), to configure in current session"
+  echo "  eval: Source this eval \$($0 eval), to set the SSH_AUTH_SOCK in current session"
   echo "  launchd: Special for launchd, do not use"
 }
 
@@ -29,9 +32,9 @@ check() {
     echo "Service installed but not running."
     echo "Have a look at openssh-service in system.log for more information"
     exit 1
-  elif [ "$SSH_AUTH_SOCK" != "$SOCKET" ]; then
+  elif [ "$SSH_AUTH_SOCK" != "$OPENSSH_SERVICE_SOCK" ]; then
     echo "Service running but not configured in this session."
-    echo "You can run 'eval \$($0 session)' to configure in this session"
+    echo "You can run 'eval \$($0 eval)' to configure in this session"
     exit 1
   else
     echo "Service running and configured in this session"
@@ -42,21 +45,25 @@ run() {
   export SSH_ASKPASS="$HOMEBREW_PREFIX/bin/ssh-askpass"
   export SSH_ASKPASS_REQUIRE=force
   export DISPLAY=":0"
-  echo Running ssh-agent with the following environment variables:
-  echo SSH_ASKPASS=$SSH_ASKPASS
-  echo SSH_ASKPASS_REQUIRE=$SSH_ASKPASS_REQUIRE
+  log Running ssh-agent with the following environment variables:
+  log SSH_ASKPASS=$SSH_ASKPASS
+  log SSH_ASKPASS_REQUIRE=$SSH_ASKPASS_REQUIRE
 
-  $HOMEBREW_PREFIX/bin/ssh-agent -D -a $SOCKET
+  $HOMEBREW_PREFIX/bin/ssh-agent -D -a $OPENSSH_SERVICE_SOCK
 }
 
 launchd() {
-  echo "Set system environment variable SSH_AUTH_SOCK to $SOCKET"
-  launchctl setenv SSH_AUTH_SOCK $SOCKET
+  log "Set system environment variable OPENSSH_SERVICE_SOCK to $OPENSSH_SERVICE_SOCK"
+  launchctl setenv OPENSSH_SERVICE_SOCK $OPENSSH_SERVICE_SOCK
   run
 }
 
-session() {
-  echo "export SSH_AUTH_SOCK=$SOCKET;"
+sessioneval() {
+  SOCK=$(launchctl getenv OPENSSH_SERVICE_SOCK)
+  if [ -z "$SOCK" ]; then
+    SOCK=$OPENSSH_SERVICE_SOCK
+  fi
+  echo "export OPENSSH_SERVICE_SOCK=$SOCK;export SSH_AUTH_SOCK=$SOCK;"
 }
 
 if [ $# -lt 1 ]; then
@@ -70,6 +77,6 @@ elif [ "$1" == "run" ]; then
   run
 elif [ "$1" == "launchd" ]; then
   launchd
-elif [ "$1" == "session" ]; then
-  session
+elif [ "$1" == "eval" ]; then
+  sessioneval
 fi
