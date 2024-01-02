@@ -1,9 +1,7 @@
 #!/bin/sh
 set -e
 
-if [ -z "${HOMEBREW_PREFIX:-}" ]; then
-  HOMEBREW_PREFIX=$(brew --prefix)
-fi
+HOMEBREW_PREFIX=$(brew --prefix)
 
 SOCKET=/tmp/ssh-agent.socket
 # This script is used to start ssh-agent as a service on macOS
