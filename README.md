@@ -14,8 +14,19 @@ Homebrew generates the plist for us directly.
 
 However you can use the `openssh-service` command for some extra features:
 * `eval $(openssh-service eval)` - set up environment variables for ssh-agent in the current session
+
 * `openssh-service check` - Check if things are setup correctly
+
 * `openssh-service run` - Run the ssh-agent in the foreground, if the service is not enabled
+
+* `openssh-service logpath` - Get the log path if the service is running through launchd
+  eg:
+
+  ```shell
+  cat $(openssh-service logpath)
+  ```
+
+  
 
 ## Installation
 
@@ -23,11 +34,13 @@ However you can use the `openssh-service` command for some extra features:
 
 Then just follow the instructions options from the caveats.
 
-### [Recommended]Using Launchd
+### [Recommended] Using Launchd
 
 1. Start the service: `brew services start openssh-service`
 2. Add the following to your `~/.ssh/config`:
-```Include /opt/homebrew/etc/ssh_config.d/openssh-service.conf```
+```
+Include /opt/homebrew/etc/ssh_config.d/openssh-service.conf
+```
 
 ### Manual
 
