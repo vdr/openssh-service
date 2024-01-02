@@ -1,7 +1,10 @@
 #!/bin/sh
 set -e
 
-PREFIX=$(brew --prefix)
+if [ -z "${HOMEBREW_PREFIX:-}" ]; then
+  HOMEBREW_PREFIX=$(brew --prefix)
+fi
+
 SOCKET=/tmp/ssh-agent.socket
 # This script is used to start ssh-agent as a service on macOS
 # Can also be used for variety of diagnostics and troubleshooting
@@ -38,14 +41,14 @@ check() {
 }
 
 run() {
-  export SSH_ASKPASS="$PREFIX/bin/ssh-askpass"
+  export SSH_ASKPASS="$HOMEBREW_PREFIX/bin/ssh-askpass"
   export SSH_ASKPASS_REQUIRE=force
   export DISPLAY=":0"
   echo Running ssh-agent with the following environment variables:
   echo SSH_ASKPASS=$SSH_ASKPASS
   echo SSH_ASKPASS_REQUIRE=$SSH_ASKPASS_REQUIRE
 
-  $PREFIX/bin/ssh-agent -D -a $SOCKET
+  $HOMEBREW_PREFIX/bin/ssh-agent -D -a $SOCKET
 }
 
 launchd() {
