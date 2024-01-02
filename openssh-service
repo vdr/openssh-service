@@ -45,7 +45,7 @@ run() {
   echo SSH_ASKPASS=$SSH_ASKPASS
   echo SSH_ASKPASS_REQUIRE=$SSH_ASKPASS_REQUIRE
 
-  $PREFIX/ssh-agent -D -a $SOCKET
+  $PREFIX/bin/ssh-agent -D -a $SOCKET
 }
 
 launchd() {
