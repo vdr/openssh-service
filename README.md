@@ -16,3 +16,22 @@ However you can use the `openssh-service` command for some extra features:
 * `eval $(openssh-service eval)` - set up environment variables for ssh-agent in the current session
 * `openssh-service check` - Check if things are setup correctly
 * `openssh-service run` - Run the ssh-agent in the foreground, if the service is not enabled
+
+## Installation
+
+`brew install vdr/tap/openssh-service`
+
+Then just follow the instructions options from the caveats.
+
+### [Recommended]Using Launchd
+
+1. Start the service: `brew services start openssh-service`
+2. Add the following to your `~/.ssh/config`:
+```Include /opt/homebrew/etc/ssh_config.d/openssh-service.conf```
+
+### Manual
+
+1. Run in a terminal: `openssh-service run`
+2. Run in each terminal you want to use ssh-agent: `eval $(openssh-service eval)`
+Alternative:
+3. Add the content of `openssh-service.conf` to the top of `~/.ssh/config`:
